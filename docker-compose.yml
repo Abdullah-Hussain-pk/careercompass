@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: careercompass_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-careercompass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-careercompass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-careercompass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: careercompass_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-careercompass}:${POSTGRES_PASSWORD:-secret}@db:5432/${POSTGRES_DB:-careercompass}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-careercompass}:${POSTGRES_PASSWORD:-secret}@db:5432/${POSTGRES_DB:-careercompass}
+      SECRET_KEY: ${SECRET_KEY:-supersecretkey_change_in_production_32chars}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: careercompass_frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
