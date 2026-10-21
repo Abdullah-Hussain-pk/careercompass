@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -81,6 +81,7 @@ interface AlertProps {
   title?: string;
   children: React.ReactNode;
   onClose?: () => void;
+  className?: string;
 }
 
 const alertStyles: Record<string, string> = {
@@ -90,9 +91,9 @@ const alertStyles: Record<string, string> = {
   error: 'bg-red-900/30 border-red-700/40 text-red-300',
 };
 
-export function Alert({ type = 'info', title, children, onClose }: AlertProps) {
+export function Alert({ type = 'info', title, children, onClose, className = '' }: AlertProps) {
   return (
-    <div className={`flex gap-3 rounded-lg border p-4 text-sm ${alertStyles[type]}`} role="alert">
+    <div className={`flex gap-3 rounded-lg border p-4 text-sm ${alertStyles[type]} ${className}`} role="alert">
       <div className="flex-1">
         {title && <p className="font-semibold mb-0.5">{title}</p>}
         <div>{children}</div>
@@ -182,6 +183,3 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
     </div>
   );
 }
-
-// Need to add useEffect import
-import { useEffect } from 'react';

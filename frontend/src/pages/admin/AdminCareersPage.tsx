@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { admin as adminApi, degrees as degreesApi, assessment as assessmentApi } from '../../api/client';
-import { PageSpinner, ErrorMessage, Alert, EmptyState, Modal, ConfirmDialog } from '../../components/ui';
-import type { CareerOut, CareerCreate, DegreeOut, SkillOut } from '../../types';
+import React, { useCallback, useEffect, useState } from 'react';
+import { admin as adminApi, degrees as degreesApi } from '../../api/client';
+import { PageSpinner, Alert, EmptyState, Modal, ConfirmDialog } from '../../components/ui';
+import type { CareerOut, CareerCreate, DegreeOut } from '../../types';
 import clsx from 'clsx';
 
-const RIASEC_FIELDS: { key: keyof CareerCreate; label: string }[] = [
+type RiasecFieldKey = 'r_score' | 'i_score' | 'a_score' | 's_score' | 'e_score' | 'c_score';
+
+const RIASEC_FIELDS: { key: RiasecFieldKey; label: string }[] = [
   { key: 'r_score', label: 'Realistic (R)' },
   { key: 'i_score', label: 'Investigative (I)' },
   { key: 'a_score', label: 'Artistic (A)' },
@@ -28,7 +30,6 @@ const emptyForm = (): Partial<CareerCreate> => ({
 export default function AdminCareersPage() {
   const [careers, setCareers] = useState<CareerOut[]>([]);
   const [degrees, setDegrees] = useState<DegreeOut[]>([]);
-  const [skills, setSkills] = useState<SkillOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -44,27 +45,25 @@ export default function AdminCareersPage() {
   // Deactivate
   const [deactivateTarget, setDeactivateTarget] = useState<CareerOut | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [includeInactive]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [careersData, degreesData, skillsData] = await Promise.all([
+      const [careersData, degreesData] = await Promise.all([
         adminApi.listCareers(includeInactive),
         degreesApi.list(),
-        assessmentApi.getSkills(),
       ]);
       setCareers(careersData);
       setDegrees(degreesData);
-      setSkills(skillsData);
     } catch (err: unknown) {
       setError((err as Error).message ?? 'Failed to load data');
     } finally {
       setLoading(false);
     }
-  }
+  }, [includeInactive]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const openCreate = () => {
     setEditingCareer(null);
@@ -256,7 +255,7 @@ export default function AdminCareersPage() {
                   </div>
                   <input
                     type="range" min={0} max={100} step={1}
-                    value={form[key] as number ?? 0}
+                    value={form[key] ?? 0}
                     onChange={(e) => setForm({ ...form, [key]: parseFloat(e.target.value) })}
                     className="w-full accent-primary-500"
                   />

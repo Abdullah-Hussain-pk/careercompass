@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
 import clsx from 'clsx';
@@ -32,7 +32,6 @@ const NAV_LINKS: Record<string, { label: string; href: string }[]> = {
 export default function Navbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   const links = user ? NAV_LINKS[user.role] ?? [] : [];

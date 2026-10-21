@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { assessment as assessmentApi, degrees as degreesApi, auth as authApi } from '../../api/client';
-import { PageSpinner, ErrorMessage, Alert, ConfirmDialog } from '../../components/ui';
-import type { StudentProfileOut, DegreeOut } from '../../types';
-import { useNavigate } from 'react-router-dom';
+import { PageSpinner, Alert, ConfirmDialog } from '../../components/ui';
+import type { DegreeOut } from '../../types';
 
 export default function AccountPage() {
-  const { user, logout, refreshUser } = useAuth();
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState<StudentProfileOut | null>(null);
+  const { user, logout } = useAuth();
   const [degrees, setDegrees] = useState<DegreeOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,7 +34,6 @@ export default function AccountPage() {
         ]);
         setDegrees(degreesData as DegreeOut[]);
         if (profileData) {
-          setProfile(profileData);
           setForm({
             degree_id: profileData.degree_id ?? '',
             semester: profileData.semester?.toString() ?? '',
@@ -65,8 +61,7 @@ export default function AccountPage() {
         ...(form.cgpa ? { cgpa: parseFloat(form.cgpa) } : {}),
         ...(form.phone ? { phone: form.phone } : {}),
       };
-      const updated = await assessmentApi.updateProfile(body);
-      setProfile(updated);
+      await assessmentApi.updateProfile(body);
       setSuccess('Profile updated successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: unknown) {

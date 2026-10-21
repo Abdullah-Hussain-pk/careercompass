@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { booking as bookingApi } from '../../api/client';
-import { PageSpinner, ErrorMessage, EmptyState, Alert, ConfirmDialog } from '../../components/ui';
+import { PageSpinner, EmptyState, Alert, ConfirmDialog } from '../../components/ui';
 import type { SlotWithCounsellorOut, BookingOut } from '../../types';
 import clsx from 'clsx';
 

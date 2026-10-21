@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   RadarChart,
   Radar,
@@ -14,7 +14,7 @@ import {
   Cell,
 } from 'recharts';
 import { recommendations as recApi, assessment as assessmentApi } from '../../api/client';
-import { PageSpinner, ErrorMessage, Alert, EmptyState } from '../../components/ui';
+import { PageSpinner, Alert, EmptyState } from '../../components/ui';
 import type { RecommendationOut, AssessmentOut } from '../../types';
 import clsx from 'clsx';
 
@@ -36,7 +36,6 @@ const RIASEC_LABELS: Record<string, string> = {
 };
 
 export default function ResultsPage() {
-  const navigate = useNavigate();
   const [recs, setRecs] = useState<RecommendationOut[]>([]);
   const [assessment, setAssessment] = useState<AssessmentOut | null>(null);
   const [variant, setVariant] = useState<Variant>('hybrid');
@@ -86,6 +85,8 @@ export default function ResultsPage() {
       }
     }
     init();
+    // Mount-only on purpose: later variant switches are handled by handleVariantChange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleVariantChange = async (v: Variant) => {
@@ -103,7 +104,9 @@ export default function ResultsPage() {
     try {
       await recApi.feedback(recId, { is_relevant: isRelevant });
       setFeedbackMap((prev) => ({ ...prev, [recId]: isRelevant }));
-    } catch {}
+    } catch {
+      // Feedback is best-effort; keep the optimistic local state either way.
+    }
   };
 
   if (loading) return <PageSpinner />;
@@ -221,7 +224,6 @@ export default function ResultsPage() {
             <CareerCard
               key={rec.id}
               rec={rec}
-              riasecProfile={assessment?.riasec_score}
               feedback={feedbackMap[rec.id] ?? null}
               onFeedback={(isRelevant) => handleFeedback(rec.id, isRelevant)}
             />
@@ -241,12 +243,10 @@ export default function ResultsPage() {
 
 function CareerCard({
   rec,
-  riasecProfile,
   feedback,
   onFeedback,
 }: {
   rec: RecommendationOut;
-  riasecProfile: AssessmentOut['riasec_score'];
   feedback: boolean | null;
   onFeedback: (isRelevant: boolean) => void;
 }) {
@@ -258,13 +258,6 @@ function CareerCard({
     { name: 'Skills', value: Math.round(rec.factor_breakdown.skill_contribution * 100) },
     { name: 'Degree', value: Math.round(rec.factor_breakdown.degree_contribution * 100) },
   ];
-
-  const careerRadarData = riasecProfile
-    ? Object.entries(RIASEC_LABELS).map(([key, label]) => ({
-        dimension: label,
-        you: Math.round((riasecProfile[key as keyof typeof riasecProfile] as number) ?? 0),
-      }))
-    : [];
 
   return (
     <div className="card hover:border-primary-700/40 transition-all">

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { booking as bookingApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import type { NotificationOut } from '../types';
@@ -27,7 +26,9 @@ export default function NotificationBell() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
       );
-    } catch {}
+    } catch {
+      // Marking as read is best-effort; the list refreshes on the next poll.
+    }
   };
 
   return (

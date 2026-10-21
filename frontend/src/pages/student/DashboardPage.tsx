@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { assessment as assessmentApi } from '../api/client';
-import { PageSpinner } from '../components/ui';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { assessment as assessmentApi } from '../../api/client';
+import { PageSpinner } from '../../components/ui';
 import clsx from 'clsx';
 
 type StepStatus = 'done' | 'active' | 'pending';
@@ -17,7 +17,6 @@ const STEPS = [
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<{
     hasProfile: boolean;
