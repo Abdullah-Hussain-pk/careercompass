@@ -270,7 +270,7 @@ export const admin = {
     full_name: string;
     role: string;
   }) =>
-    apiFetch<UserOut>('/auth/register', { method: 'POST', body }),
+    apiFetch<UserOut>('/admin/users', { method: 'POST', body }),
 
   // Weights
   getWeights: () => apiFetch<WeightsOut>('/admin/weights'),

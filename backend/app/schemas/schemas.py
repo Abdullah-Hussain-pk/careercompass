@@ -4,7 +4,7 @@ CareerCompass – All Pydantic v2 schemas for request/response validation.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Literal
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -16,7 +16,17 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, description="Min 8 characters")
     full_name: str = Field(..., min_length=1, max_length=255)
-    role: str = Field(default="student", pattern="^(student|counsellor|admin|expert)$")
+
+    # Extra fields (e.g. "role") are rejected at the schema level (H2).
+    model_config = {"extra": "forbid"}
+
+
+class AdminCreateUser(BaseModel):
+    """Schema for admin-only user creation (FR-2 / H2)."""
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="Min 8 characters")
+    full_name: str = Field(..., min_length=1, max_length=255)
+    role: Literal["counsellor", "expert", "admin"]  # student accounts use /auth/register
 
 
 class UserLogin(BaseModel):

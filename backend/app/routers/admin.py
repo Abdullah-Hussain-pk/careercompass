@@ -18,7 +18,7 @@ from app.models.models import (
 )
 from app.schemas.schemas import (
     CareerOut, CareerCreate, CareerUpdate, CareerSkillOut,
-    UserOut, SettingOut, SettingUpdate, WeightsUpdate, WeightsOut,
+    UserOut, AdminCreateUser, SettingOut, SettingUpdate, WeightsUpdate, WeightsOut,
     ExpertSubmissionOut, ReviewSubmission, AnalyticsSummary, EvaluationResult
 )
 from app.services.analytics.evaluator import compute_evaluation
@@ -192,6 +192,50 @@ async def deactivate_career(
 
 
 # ── User Management ─────────────────────────────────────────────────────────
+
+@router.post("/users", response_model=UserOut, status_code=201)
+async def admin_create_user(
+    body: AdminCreateUser,
+    current_user=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """
+    Admin-only endpoint to create counsellor / expert / admin accounts (H2 / FR-2).
+    Public registration (/auth/register) is restricted to students only.
+    """
+    from app.core.security import hash_password
+    from app.models.models import AuditLog
+
+    # Reject duplicate email
+    result = await db.execute(select(User).where(User.email == body.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
+    new_user = User(
+        email=body.email,
+        hashed_password=hash_password(body.password),
+        full_name=body.full_name,
+        role=body.role,
+    )
+    db.add(new_user)
+    await db.flush()  # get new_user.id
+
+    # Audit log (no email in detail – NFR-4 / GDPR)
+    audit = AuditLog(
+        action="user_created_by_admin",
+        resource_type="user",
+        actor_id=current_user.id,
+        resource_id=new_user.id,
+    )
+    db.add(audit)
+
+    await db.commit()
+    await db.refresh(new_user)
+    return UserOut.model_validate(new_user)
+
 
 @router.get("/users", response_model=List[UserOut])
 async def list_users(

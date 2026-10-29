@@ -45,15 +45,14 @@ async def register(
         email=body.email,
         hashed_password=hash_password(body.password),
         full_name=body.full_name,
-        role=body.role,
+        role="student",  # public registration always creates students (H2)
     )
     db.add(user)
     await db.flush()  # get user.id before creating profile
 
-    # Create student profile automatically for students
-    if body.role == "student":
-        profile = StudentProfile(user_id=user.id)
-        db.add(profile)
+    # Public registration always creates a student profile (H2)
+    profile = StudentProfile(user_id=user.id)
+    db.add(profile)
 
     # Audit log
     audit = AuditLog(action="user_registered", resource_type="user", resource_id=user.id)
