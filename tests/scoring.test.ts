@@ -1,0 +1,12 @@
+import {describe,it,expect} from 'vitest';
+import {questions,types,scoreInterests,cosine,rankCareers,precisionAtK,ndcgAtK,skillCatalog} from '../packages/shared/domain.js';
+import {starterCareers} from '../packages/shared/careers.js';
+describe('recommendation mathematics',()=>{
+ it('contains exactly eight questions for each of six types',()=>{expect(questions).toHaveLength(48);for(const t of types)expect(questions.filter(q=>q.type===t)).toHaveLength(8);});
+ it('normalises each scale to 0–100 with exact endpoints',()=>{expect(Object.values(scoreInterests(Array(48).fill(1)))).toEqual(Array(6).fill(0));expect(Object.values(scoreInterests(Array(48).fill(5)))).toEqual(Array(6).fill(100));expect(Object.values(scoreInterests(Array(48).fill(3)))).toEqual(Array(6).fill(50));});
+ it('rejects missing and out-of-range answers',()=>{expect(()=>scoreInterests([1])).toThrow();expect(()=>scoreInterests(Array(48).fill(6))).toThrow();});
+ it('handles zero vectors without NaN and identical vectors as 1',()=>{const zero=scoreInterests(Array(48).fill(1)),full=scoreInterests(Array(48).fill(5));expect(cosine(zero,full)).toBe(0);expect(cosine(full,full)).toBeCloseTo(1);});
+ it('keeps contribution sums equal to displayed scores and ranks deterministically',()=>{const scores=scoreInterests(Array(48).fill(4));const skills=Object.fromEntries(skillCatalog.map(s=>[s.id,2]));const m=rankCareers(scores,skills,null,starterCareers);expect(m).toHaveLength(42);for(const r of m){expect(r.score).toBeGreaterThanOrEqual(0);expect(r.score).toBeLessThanOrEqual(100);expect(Math.round(r.factors.reduce((s,f)=>s+f.contribution,0)*10)/10).toBe(r.score);expect(r.factors.find(f=>f.label==='Academic fit')?.value).toBe(50);}expect(m.map(r=>r.score)).toEqual([...m.map(r=>r.score)].sort((a,b)=>b-a));expect(rankCareers(scores,skills,null,[...starterCareers].reverse()).map(r=>r.career.id)).toEqual(m.map(r=>r.career.id));});
+ it('removes inactive careers and only includes missing required skills',()=>{const c={...starterCareers[0],active:false};expect(rankCareers(scoreInterests(Array(48).fill(3)),{},null,[c])).toHaveLength(0);const m=rankCareers(scoreInterests(Array(48).fill(3)),{programming:5,design:5,communication:5,writing:5},null,[starterCareers[0]])[0];expect(m.gaps).toHaveLength(0);});
+ it('computes ranking evaluation on known judgements',()=>{expect(precisionAtK(['a','b','c','d','e'],{a:5,b:4,c:1,d:2,e:3})).toBe(.4);expect(ndcgAtK(['a','b'],{a:5,b:1})).toBe(1);expect(ndcgAtK(['b','a'],{a:5,b:1})).toBeLessThan(1);expect(ndcgAtK(['a'],{})).toBe(0);});
+});
